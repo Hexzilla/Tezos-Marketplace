@@ -1,0 +1,24 @@
+#import "types.jsligo" "Types"
+#import "admin.jsligo" "Admin"
+#import "token.jsligo" "Token"
+
+type market_storage = Types.market_storage;
+
+type market_param =
+    ["Admin", Admin.simple_admin]
+  | ["Token", Token.token_param];
+
+
+type return_type = [list<operation>, market_storage];
+
+
+export const main = ([param, storage] : [market_param, market_storage]) : return_type => {
+  match(param, {
+    Admin: (p: Admin.simple_admin) => {
+      return Admin.main(p, storage);
+    },
+    Token: (p: Token.token_param) => {
+      return Token.main(p, storage);
+    }
+  });
+};

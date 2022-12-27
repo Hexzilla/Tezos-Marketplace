@@ -1,0 +1,18 @@
+export type market_item = {
+  owner: address,
+  token_id: nat,
+  price: tez,
+  amount: nat
+};
+
+export type item_list = list<market_item>;
+export type item_ledger = big_map<address, item_list>;
+
+export type market_storage = {
+  admin: address,
+  pending_admin: option<address>,
+  paused: bool,
+
+  items: item_list,
+  ledger: item_ledger,
+};

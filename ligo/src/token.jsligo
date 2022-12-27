@@ -1,0 +1,76 @@
+#import "types.jsligo" "Types"
+
+type market_item = Types.market_item;
+type item_list = Types.item_list;
+type item_ledger = Types.item_ledger;
+type market_storage = Types.market_storage;
+type return_type = [list<operation>, market_storage];
+
+type item_param = {
+  token_id: nat,
+  price: tez,
+  amount: nat
+};
+
+export type token_param = 
+  | ["Add_items", list<item_param>]
+  | ["Buy_items", list<item_param>];
+
+const empty_operation_list = (list([]) as list<operation>);
+
+const add_items = ([new_items, storage] : [list<item_param>, market_storage]) : market_storage => {
+  if (List.length(new_items) <= (0 as nat)) {
+    return failwith("INVALID_ITEM_LENGTH");
+  } else {
+    const owner = Tezos.get_sender();
+    const append_fold = (result: item_list, item: item_param): item_list => {
+      const market_item: market_item = {
+        owner,
+        token_id: item.token_id,
+        price: item.price,
+        amount: item.amount,
+      };
+      return list([market_item, ...result]);
+    }
+    const updated_items = List.fold(append_fold, new_items, storage.items);
+    return {
+      ...storage,
+      items: updated_items,
+    };
+  }
+};
+
+const buy_items = ([new_items, storage] : [list<item_param>, market_storage]) : market_storage => {
+  if (List.length(new_items) <= (0 as nat)) {
+    return failwith("INVALID_ITEM_LENGTH");
+  } else {
+    const owner = Tezos.get_sender();
+    const market_items = List.map((item: item_param): market_item => {
+      return {
+        owner,
+        token_id: item.token_id,
+        price: item.price,
+        amount: item.amount,
+      };
+    }, new_items);
+
+    const ledger = Big_map.add(owner, market_items, storage.ledger);
+    return {
+      ...storage,
+      ledger: ledger,
+    };
+  }
+};
+
+export const main = ([param, storage] : [token_param, market_storage]) : return_type => {
+  match(param, {
+    Add_items: (items: list<item_param>) => {
+      const new_s = add_items(items, storage);
+      return [empty_operation_list, new_s];
+    },
+    Buy_items: (items: list<item_param>) => {
+      const new_s = buy_items(items, storage);
+      return [empty_operation_list, new_s];
+    }
+  })
+};
